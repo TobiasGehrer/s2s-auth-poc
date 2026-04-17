@@ -34,9 +34,10 @@ s2s-auth-poc/
 ├── oauth2/
 │   ├── docker-compose.yml     # Compose-Konfiguration OAuth 2.0
 │   └── keycloak/              # Keycloak Realm-Konfiguration
-└── tests/
+├── tests/
 ├── mtls.js                    # k6 Lasttest mTLS
-└── oauth2.js                  # k6 Lasttest OAuth 2.0
+├── oauth2.js                  # k6 Lasttest OAuth 2.0
+└── failover.js                # k6 Ausfall-Test
 
 ## Quickstart
 
@@ -87,19 +88,53 @@ Stelle sicher dass die jeweilige Umgebung läuft, dann:
 
 ```powershell
 cd tests
-k6 run mtls.js      # mTLS Lasttest
-k6 run oauth2.js    # OAuth 2.0 Lasttest
+k6 run mtls.js      # mTLS Lasttest (50 konstant, Ramp-Up bis 200 VUs)
+k6 run oauth2.js    # OAuth 2.0 Lasttest (50 konstant, Ramp-Up bis 200 VUs)
+```
+
+### Ausfall-Tests
+
+Lasttest starten, dann in einem zweiten Terminal die zentrale Komponente stoppen:
+
+```powershell
+# Terminal 1
+cd tests
+k6 run failover.js
+
+# Terminal 2 -- nach ~30s
+cd mtls   # oder oauth2
+docker compose stop step-ca    # mTLS: CA stoppen
+# oder
+docker compose stop keycloak   # OAuth 2.0: Authorization Server stoppen
+
+# Nach weiteren 30s wieder starten
+docker compose start step-ca
+# oder
+docker compose start keycloak
 ```
 
 ## Testergebnisse
 
+### Lasttest (50 konstant → Ramp-Up bis 200 VUs)
+
 | Metrik | mTLS | OAuth 2.0 |
 |---|---|---|
-| p(95) Latenz | 4.05ms | 3.46ms |
-| p(90) Latenz | 3.67ms | 3.19ms |
-| Avg Latenz | 4.07ms | 6.04ms |
+| Avg Latenz | 3.87ms | 5.94ms |
+| p(90) Latenz | 3.69ms | 2.72ms |
+| p(95) Latenz | 4.63ms | 2.98ms |
+| Max Latenz | 589.61ms | 2430ms |
 | Fehlerrate | 0.00% | 0.00% |
-| Requests/s | 53.4 | 53.3 |
+| Durchsatz | 214.9 req/s | 213.8 req/s |
+
+### Ausfall-Test (50 VUs, 120s, zentrale Komponente gestoppt nach ~30s)
+
+| Metrik | mTLS (Step-CA gestoppt) | OAuth 2.0 (Keycloak gestoppt) |
+|---|---|---|
+| Avg Latenz | 5.88ms | 11.69ms |
+| Max Latenz | 598.01ms | 2550ms |
+| Fehlerrate | 0.00% | 0.00% |
+
+**Beobachtung:** mTLS validiert Zertifikate lokal. Ein Ausfall der CA hat keinen Einfluss auf laufende Authentifizierungen. OAuth 2.0 zeigt erhöhte Latenz durch fehlgeschlagene Token-Renewal-Versuche im Hintergrund. Bei längerem Ausfall würden gecachte Tokens ablaufen und Requests fehlschlagen.
 
 ## Authentifizierung verifizieren
 

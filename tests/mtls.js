@@ -5,16 +5,16 @@ export const options = {
   scenarios: {
     constant_load: {
       executor: 'constant-vus',
-      vus: 10,
+      vus: 50,
       duration: '30s',
     },
     ramp_up: {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { duration: '15s', target: 50 },
-        { duration: '30s', target: 50 },
-        { duration: '15s', target: 0 },
+        { duration: '30s', target: 200 },
+        { duration: '30s', target: 200 },
+        { duration: '30s', target: 0 },
       ],
       startTime: '35s',
     },
@@ -30,8 +30,13 @@ export default function () {
 
   check(res, {
     'status is 200': (r) => r.status === 200,
-    'authenticated_client is service-a': (r) =>
-      JSON.parse(r.body).authenticated_client === 'CN=service-a',
+    'authenticated_client is service-a': (r) => {
+      try {
+        return JSON.parse(r.body).authenticated_client === 'CN=service-a';
+      } catch {
+        return false;
+      }
+    },
   });
 
   sleep(0.5);

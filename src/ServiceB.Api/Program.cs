@@ -23,18 +23,18 @@ if (authMode == "mtls")
         {
             listenOptions.UseHttps(https =>
             {
-                https.ServerCertificate =
-                    X509Certificate2.CreateFromPemFile(certPath, keyPath);
-                https.ClientCertificateMode =
-                    ClientCertificateMode.RequireCertificate;
+                https.ServerCertificate = X509Certificate2.CreateFromPemFile(certPath, keyPath);
+                https.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
                 https.ClientCertificateValidation = (cert, chain, _) =>
                 {
-                    chain!.ChainPolicy.RevocationMode =
-                        X509RevocationMode.NoCheck;
-                    chain.ChainPolicy.TrustMode =
-                        X509ChainTrustMode.CustomRootTrust;
+                    chain!.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+
                     foreach (var ca in caBundle)
-                        chain.ChainPolicy.CustomTrustStore.Add(ca);
+                    { 
+                        chain.ChainPolicy.CustomTrustStore.Add(ca); 
+                    }
+
                     return chain.Build(cert);
                 };
             });
@@ -82,9 +82,7 @@ app.MapGet("/metrics", (HttpContext ctx) =>
     }
     else
     {
-        clientId = ctx.User.Claims
-            .FirstOrDefault(c => c.Type == "azp" || c.Type == "client_id")
-            ?.Value ?? "none";
+        clientId = ctx.User.Claims.FirstOrDefault(c => c.Type == "azp" || c.Type == "client_id") ?.Value ?? "none";
     }
 
     return Results.Ok(new

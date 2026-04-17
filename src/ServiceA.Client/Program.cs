@@ -29,13 +29,22 @@ if (authMode == "mtls")
         handler.ClientCertificates.Add(cert);
         handler.ServerCertificateCustomValidationCallback = (_, cert, chain, _) =>
         {
-            if (cert == null) return false;
+            if (cert == null) 
+            { 
+                return false; 
+            }
+
             chain!.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
             chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+
             foreach (var ca in caBundle)
+            {
                 chain.ChainPolicy.CustomTrustStore.Add(ca);
+            }
+
             return chain.Build(new X509Certificate2(cert));
         };
+
         return handler;
     });
 }
@@ -69,8 +78,7 @@ app.MapGet("/trigger", async (IHttpClientFactory factory, TokenCache cache) =>
         if (authMode == "oauth2")
         {
             var token = await GetTokenAsync(factory, cache);
-            client.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
         }
 
         var response = await client.GetAsync("/metrics");
@@ -91,7 +99,9 @@ async Task<string> GetTokenAsync(IHttpClientFactory factory, TokenCache cache)
 {
     // Gecachtes Token zurückgeben wenn noch gültig
     if (cache.Token != null && cache.ExpiresAt > DateTime.UtcNow.AddSeconds(30))
+    {
         return cache.Token;
+    }
 
     var keycloakClient = factory.CreateClient("Keycloak");
     var tokenUrl = $"/realms/{realm}/protocol/openid-connect/token";
@@ -109,10 +119,8 @@ async Task<string> GetTokenAsync(IHttpClientFactory factory, TokenCache cache)
     var json = await response.Content.ReadAsStringAsync();
     var doc = JsonDocument.Parse(json);
 
-    var accessToken = doc.RootElement
-        .GetProperty("access_token").GetString()!;
-    var expiresIn = doc.RootElement
-        .GetProperty("expires_in").GetInt32();
+    var accessToken = doc.RootElement.GetProperty("access_token").GetString()!;
+    var expiresIn = doc.RootElement.GetProperty("expires_in").GetInt32();
 
     cache.Token = accessToken;
     cache.ExpiresAt = DateTime.UtcNow.AddSeconds(expiresIn);
