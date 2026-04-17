@@ -1,0 +1,24 @@
+{
+  "realm": "s2s-auth",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "service-a",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "service-a-secret",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect"
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "service",
+        "description": "Role for internal services"
+      }
+    ]
+  }
+}

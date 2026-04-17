@@ -1,0 +1,57 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    command: start-dev --import-realm
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_HTTP_PORT=8090
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    ports:
+      - "8090:8090"
+    networks:
+      - oauth2-net
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/localhost/8090' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  service-b:
+    build:
+      context: ../src/ServiceB.Api
+      dockerfile: Dockerfile
+    environment:
+      - AUTH_MODE=oauth2
+      - KEYCLOAK_URL=http://keycloak:8090
+      - KEYCLOAK_REALM=s2s-auth
+    ports:
+      - "8081:8080"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    networks:
+      - oauth2-net
+
+  service-a:
+    build:
+      context: ../src/ServiceA.Client
+      dockerfile: Dockerfile
+    environment:
+      - AUTH_MODE=oauth2
+      - SERVICE_B_URL=http://service-b:8080
+      - KEYCLOAK_URL=http://keycloak:8090
+      - KEYCLOAK_REALM=s2s-auth
+      - CLIENT_ID=service-a
+      - CLIENT_SECRET=service-a-secret
+    ports:
+      - "8080:8080"
+    depends_on:
+      - service-b
+    networks:
+      - oauth2-net
+
+networks:
+  oauth2-net:
