@@ -1,7 +1,5 @@
 # s2s-auth-poc
 
-# s2s-auth-poc
-
 Proof-of-Concept Implementierung für die Bachelorarbeit **"Sichere Service-to-Service Authentifizierung in Industrial IT-Umgebungen"** 
 
 Fachhochschule Vorarlberg, 2026
