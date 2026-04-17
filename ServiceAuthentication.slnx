@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ServiceA.Client/ServiceA.Client.csproj" />
+    <Project Path="src/ServiceB.Api/ServiceB.Api.csproj" />
+  </Folder>
+</Solution>
