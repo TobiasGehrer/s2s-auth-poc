@@ -1,0 +1,66 @@
+services:
+  step-ca:
+    image: smallstep/step-ca:0.30.2
+    environment:
+      - DOCKER_STEPCA_INIT_NAME=S2S-Auth-POC-CA
+      - DOCKER_STEPCA_INIT_DNS_NAMES=step-ca,localhost
+      - DOCKER_STEPCA_INIT_ACME=true
+      - DOCKER_STEPCA_INIT_PASSWORD=poc-password
+    volumes:
+      - step-ca-data:/home/step
+    ports:
+      - "9000:9000"
+    networks:
+      - mtls-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "-q", "-O", "-", "https://localhost:9000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  service-b:
+    build:
+      context: ../src/ServiceB.Api
+      dockerfile: Dockerfile
+    volumes:
+      - ./certs/server/server.crt:/certs/server.crt:ro
+      - ./certs/server/server.key:/certs/server.key:ro
+      - ./certs/ca_bundle.crt:/certs/ca_bundle.crt:ro
+    environment:
+      - TLS_CERT_PATH=/certs/server.crt
+      - TLS_KEY_PATH=/certs/server.key
+      - CA_BUNDLE_PATH=/certs/ca_bundle.crt
+    ports:
+      - "8443:443"
+    depends_on:
+      step-ca:
+        condition: service_healthy
+    networks:
+      - mtls-net
+
+  service-a:
+    build:
+      context: ../src/ServiceA.Client
+      dockerfile: Dockerfile
+    volumes:
+      - ./certs/client/client.crt:/certs/client.crt:ro
+      - ./certs/client/client.key:/certs/client.key:ro
+      - ./certs/ca_bundle.crt:/certs/ca_bundle.crt:ro
+    environment:
+      - SERVICE_B_URL=https://service-b:443
+      - TLS_CERT_PATH=/certs/client.crt
+      - TLS_KEY_PATH=/certs/client.key
+      - CA_BUNDLE_PATH=/certs/ca_bundle.crt
+    ports:
+      - "8080:8080"
+    depends_on:
+      - service-b
+    networks:
+      - mtls-net
+
+networks:
+  mtls-net:
+
+volumes:
+  step-ca-data:
