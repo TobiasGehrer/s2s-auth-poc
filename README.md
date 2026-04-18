@@ -20,23 +20,6 @@ Beide Patterns werden in einer Docker-Compose-Umgebung mit zwei ASP.NET Core Ser
 - k6 (`winget install k6 --source winget`)
 - PowerShell
 
-## Struktur
-s2s-auth-poc/
-├── src/
-│   ├── ServiceA.Client/       # Aufrufender Service (C#, .NET 10)
-│   └── ServiceB.Api/          # Geschützte API (C#, .NET 10)
-├── mtls/
-│   ├── docker-compose.yml     # Compose-Konfiguration mTLS
-│   ├── setup.ps1              # Setup-Skript (CA + Zertifikate + Services)
-│   └── step-ca/               # Step-CA Konfiguration
-├── oauth2/
-│   ├── docker-compose.yml     # Compose-Konfiguration OAuth 2.0
-│   └── keycloak/              # Keycloak Realm-Konfiguration
-├── tests/
-├── mtls.js                    # k6 Lasttest mTLS
-├── oauth2.js                  # k6 Lasttest OAuth 2.0
-└── failover.js                # k6 Ausfall-Test
-
 ## Quickstart
 
 ### mTLS
